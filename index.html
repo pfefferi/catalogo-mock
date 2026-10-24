@@ -1,0 +1,180 @@
+<!doctype html>
+<!--
+  CATÁLOGO EXPRESS — static mock-test version (DEMO, not the real project).
+  State doc §3: runs by opening this file or dropping it on GitHub Pages.
+  No server, no database, no accounts, no secrets, no build step.
+  Data: embedded JSON (8 seed-mirroring lots, picsum placeholders — replace
+  before any real use). Seller number: typed in Ajustes, kept in localStorage.
+  Team build trail: feat/cat-b2 documents/ideas/2026-10-24_CATALOG_BUILD_*.
+-->
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Catálogo Express (mock)</title>
+<style>
+  *{box-sizing:border-box} body{font-family:system-ui,sans-serif;margin:0;background:#f4f4f5;color:#18181b}
+  header{position:sticky;top:0;background:#18181b;color:#fff;padding:.6rem;display:flex;gap:.4rem;flex-wrap:wrap}
+  header a{color:#fff;text-decoration:none;background:#3f3f46;border-radius:.5rem;padding:.4rem .6rem;font-size:.85rem}
+  main{max-width:40rem;margin:0 auto;padding:.75rem;display:grid;gap:.75rem}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:.6rem}
+  .card{background:#fff;border:1px solid #e4e4e7;border-radius:.75rem;overflow:hidden}
+  .card img{width:100%;aspect-ratio:4/3;object-fit:cover;display:block}
+  .pad{padding:.6rem;display:grid;gap:.35rem}
+  .badge{display:inline-block;border-radius:999px;padding:.1rem .5rem;font-size:.72rem;font-weight:700}
+  .b-av{background:#dcfce7;color:#166534}.b-re{background:#fef3c7;color:#92400e}.b-so{background:#e4e4e7;color:#3f3f46}
+  .b-mode{background:#e0f2fe;color:#075985}.b-cond{background:#ede9fe;color:#5b21b6}
+  input,select,button{font-size:1rem;padding:.55rem;border-radius:.5rem;border:1px solid #d4d4d8}
+  button{background:#18181b;color:#fff;border:none;cursor:pointer} button.ghost{background:#fff;color:#18181b;border:1px solid #d4d4d8}
+  .ask{background:#16a34a;font-weight:700;text-align:center;display:block;text-decoration:none;color:#fff}
+  .row{display:flex;gap:.4rem;flex-wrap:wrap} .row>*{flex:1}
+  .chip.on{background:#18181b;color:#fff}
+  .demo{background:#fef9c3;border:1px solid #eab308;border-radius:.5rem;padding:.5rem;font-size:.8rem}
+  .thumbs{display:flex;gap:.4rem} .thumbs img{width:4rem;aspect-ratio:1;object-fit:cover;border-radius:.4rem;border:2px solid transparent}
+  .thumbs img.on{border-color:#18181b}
+  iframe.map{width:100%;aspect-ratio:16/9;border:1px solid #d4d4d8;border-radius:.75rem}
+  small.mut{color:#71717a}
+</style>
+</head>
+<body>
+<header>
+  <a href="#/">Catálogo</a><a href="#/admin">Admin</a><a href="#/deposito">Depósito</a><a href="#/ajustes">Ajustes</a>
+</header>
+<main id="app"></main>
+<script src="https://cdn.jsdelivr.net/npm/compressorjs@1.2.1/dist/compressor.min.js"></script>
+<script>
+'use strict';
+/* ---------- embedded mock data (mirrors T007 seed; picsum placeholders) ---------- */
+const SEED = [
+ {ref:'LOT-2026-0008',title:'Intercomunicador bebe con video',photos:['https://picsum.photos/seed/cat-baby1/800/600'],status:'available',mode:'per-unit',price:54000,cond:'open-box',cat:'communications',ts:1},
+ {ref:'LOT-2026-0007',title:'Amoladora angular 115mm',photos:['https://picsum.photos/seed/cat-grind1/800/600'],status:'available',mode:'per-unit',price:68000,cond:'new',cat:'tools',ts:2},
+ {ref:'LOT-2026-0006',title:'Lote surtido cables y conectores',photos:['https://picsum.photos/seed/cat-misc1/800/600','https://picsum.photos/seed/cat-misc2/800/600'],status:'available',mode:'lot',price:null,cond:'for-parts',cat:'clearance-misc',ts:3},
+ {ref:'LOT-2026-0005',title:'Lavarropas carga frontal 8kg',photos:['https://picsum.photos/seed/cat-wash1/800/600'],status:'sold',mode:'lot',price:410000,cond:'new',cat:'appliances',ts:4},
+ {ref:'LOT-2026-0004',title:'Camara mirrorless + lente 35mm',photos:['https://picsum.photos/seed/cat-cam1/800/600','https://picsum.photos/seed/cat-cam2/800/600','https://picsum.photos/seed/cat-cam3/800/600','https://picsum.photos/seed/cat-cam4/800/600'],status:'available',mode:'per-unit',price:720000,cond:'open-box',cat:'cameras',ts:5},
+ {ref:'LOT-2026-0003',title:'Drone RC con camara 4K (repuesto)',photos:['https://picsum.photos/seed/cat-drone1/800/600','https://picsum.photos/seed/cat-drone2/800/600','https://picsum.photos/seed/cat-drone3/800/600'],status:'reserved',mode:'lot',price:null,cond:'for-parts',cat:'drones-rc',ts:6},
+ {ref:'LOT-2026-0002',title:'Handy UHF/VHF par x2 con cargador',photos:['https://picsum.photos/seed/cat-radio1/800/600'],status:'available',mode:'per-unit',price:95000,cond:'new',cat:'communications',ts:7},
+ {ref:'LOT-2026-0001',title:'Taladro percutor 13mm + 2 baterias',photos:['https://picsum.photos/seed/cat-drill1/800/600','https://picsum.photos/seed/cat-drill2/800/600'],status:'available',mode:'lot',price:185000,cond:'open-box',cat:'tools',ts:8},
+];
+const LOTS_KEY='catalog_mock_lots_v1', DIGITS_KEY='catalog_seller_digits';
+const FAKE_DIGITS='0000000000000'; // DEMO default — not a real number, always replace in Ajustes
+const ST={available:'Disponible',reserved:'Reservado',sold:'Vendido'};
+const MO={lot:'Lote cerrado','per-unit':'Por unidad'};
+const CO={new:'Nuevo','open-box':'Open Box','for-parts':'A revisar / Repuesto'};
+const CA={tools:'Herramientas',communications:'Comunicaciones','drones-rc':'Drones / RC',cameras:'Cámaras',appliances:'Electrodomésticos','clearance-misc':'Saldos / Varios'};
+const price=l=>l.price==null?'Consultar precio':'$ '+Number(l.price).toLocaleString('es-AR');
+const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+const load=()=>{try{const r=JSON.parse(localStorage.getItem(LOTS_KEY));if(Array.isArray(r)&&r.length)return r}catch(e){} return JSON.parse(JSON.stringify(SEED));};
+const save=l=>localStorage.setItem(LOTS_KEY,JSON.stringify(l));
+const digits=()=>(localStorage.getItem(DIGITS_KEY)||FAKE_DIGITS);
+const digitsOk=d=>/^\d{7,15}$/.test(d)&&d!==FAKE_DIGITS&&!/^(\d)\1+$/.test(d);
+const askMsg=(l,url)=>`Hola, consulto por este lote: ${l.title} (${l.ref}) ${url}`;
+const lotUrl=r=>location.href.split('#')[0]+'#/lote/'+r;
+let lots=load(), F={q:'',cat:'',mode:''}, photo=0, adminPhotos=[];
+window.__compressorOffline=false;
+
+/* ---------- buyer: feed ---------- */
+function feed(){
+  const v=lots.filter(l=>(!F.cat||l.cat===F.cat)&&(!F.mode||l.mode===F.mode)&&(!F.q||l.title.toLowerCase().includes(F.q)||l.ref.toLowerCase().includes(F.q)));
+  const chips=(opts,cur,fn)=>opts.map(([k,l])=>`<button class="ghost chip${cur===k?' on':''}" data-f="${fn}" data-v="${k}">${l}</button>`).join('');
+  return `<div class="demo">MOCK de prueba — fotos y datos de ejemplo. El número de WhatsApp se configura en <a href="#/ajustes">Ajustes</a>.</div>
+  <input id="q" placeholder="Buscar por palabra clave…" value="${esc(F.q)}">
+  <div class="row">${chips([['','Todo'],...Object.entries(CA)],F.cat,'cat')}</div>
+  <div class="row">${chips([['','Lote + unidad'],['lot','Lote cerrado'],['per-unit','Por unidad']],F.mode,'mode')}</div>
+  <div class="grid">${v.map(l=>`<article class="card"><img src="${l.photos[0]}" alt="" loading="lazy"><div class="pad">
+    <div><span class="badge ${l.status==='available'?'b-av':l.status==='reserved'?'b-re':'b-so'}">${ST[l.status]}</span>
+    <span class="badge b-mode">${MO[l.mode]}</span></div>
+    <strong>${esc(l.title)}</strong><div>${price(l)} · <span class="badge b-cond">${CO[l.cond]}</span></div>
+    <a href="#/lote/${l.ref}">Ver ficha · ${l.ref}</a></div></article>`).join('')}</div>
+  ${v.length?'':'<p><small class="mut">Sin resultados.</small></p>'}`;
+}
+/* ---------- buyer: lot page ---------- */
+function lotView(ref){
+  const l=lots.find(x=>x.ref===ref); if(!l) return `<p>No existe ${esc(ref)}. <a href="#/">Volver</a></p>`;
+  const g=l.photos.slice(0,4), url=lotUrl(ref);
+  const d=digits(), okD=digitsOk(d);
+  return `<div><img id="main" src="${g[photo]||g[0]}" alt="" style="width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:.75rem">
+  ${g.length>1?`<div class="thumbs">${g.map((s,i)=>`<img src="${s}" data-p="${i}" class="${i===(photo||0)?'on':''}" loading="lazy">`).join('')}</div>`:''}</div>
+  <div><span class="badge ${l.status==='available'?'b-av':l.status==='reserved'?'b-re':'b-so'}">${ST[l.status]}</span>
+  <span class="badge b-mode">${MO[l.mode]}</span> <span class="badge b-cond">${CO[l.cond]}</span></div>
+  <h2 style="margin:.2rem 0">${esc(l.title)}</h2><small class="mut">Ref ${l.ref}</small><h3>${price(l)}</h3>
+  ${okD?`<a class="ask" style="padding:.8rem;border-radius:.5rem" href="https://wa.me/${d}?text=${encodeURIComponent(askMsg(l,url))}">Consultar por este lote</a>`
+       :`<div class="demo">WhatsApp sin configurar (número de prueba). <a href="#/ajustes">Ir a Ajustes</a>.</div>`}
+  <div class="row"><button class="ghost" id="sh">Compartir</button><a class="ghost" style="text-align:center;text-decoration:none;color:#18181b" target="_blank" rel="noreferrer" href="https://wa.me/?text=${encodeURIComponent(l.title+' '+url)}">WhatsApp</a><button class="ghost" id="cp">Copiar enlace</button></div>
+  <p><a href="#/">← Volver al catálogo</a></p>`;
+}
+/* ---------- simulated admin (localStorage CRUD) ---------- */
+function admin(){
+  return `<h2>Admin (simulado, local)</h2><div class="demo">Los cambios quedan en este navegador (localStorage). Las fotos se eligen del celular; se comprimen con Compressor.js por CDN — <b>sin internet no hay compresor</b>, se guarda la foto original.</div>
+  <h3>Publicar lote</h3><div class="pad card">
+  <input id="a-ph" type="file" accept="image/*" capture="environment" multiple>
+  <small class="mut" id="a-phn">0/4 fotos</small>
+  <input id="a-t" placeholder="Título (3 a 120 letras)">
+  <select id="a-c"><option value="">Categoría…</option>${Object.entries(CA).map(([k,l])=>`<option value="${k}">${l}</option>`).join('')}</select>
+  <div class="row">${['available','reserved','sold'].map(s=>`<button class="ghost chip" data-s="${s}">${ST[s]}</button>`).join('')}</div>
+  <button id="a-add">Publicar lote</button></div>
+  <h3>Lotes (${lots.length})</h3>${lots.map(l=>`<div class="pad card"><strong>${esc(l.title)}</strong><small class="mut">${l.ref} · ${ST[l.status]}</small>
+  <div class="row"><button class="ghost" data-cyc="${l.ref}">→ ${l.status==='available'?'Reservado':l.status==='reserved'?'Vendido':'Disponible'}</button><button class="ghost" data-del="${l.ref}">Dar de baja</button></div></div>`).join('')}
+  <p><button class="ghost" id="a-reset">Restablecer datos de ejemplo</button></p>`;
+}
+async function pickPhotos(files){
+  const out=[]; const list=Array.from(files||[]).slice(0,4-adminPhotos.length);
+  for(const f of list){
+    try{
+      if(typeof Compressor==='undefined'){window.__compressorOffline=true;throw 0;}
+      const b=await new Promise((res,rej)=>new Compressor(f,{quality:.7,maxWidth:1280,maxHeight:1280,mimeType:'image/jpeg',success:res,error:rej}));
+      out.push(URL.createObjectURL(b));
+    }catch(e){ out.push(URL.createObjectURL(f)); } // offline: original + note
+  }
+  adminPhotos=[...adminPhotos,...out].slice(0,4);
+  const n=document.getElementById('a-phn'); if(n)n.textContent=adminPhotos.length+'/4 fotos'+(window.__compressorOffline?' (sin compresor: sin internet)':'');
+}
+/* ---------- depot + settings ---------- */
+function depot(){
+  return `<h2>Depósito · retiro y condiciones</h2>
+  <p><b>Dirección:</b> TODO — dirección del galpón (dato de ejemplo, reemplazar).</p>
+  <iframe class="map" loading="lazy" title="Cómo llegar (vista de ejemplo)" src="https://www.openstreetmap.org/export/embed.html?bbox=-58.3916%2C-34.6137%2C-58.3716%2C-34.5937&amp;layer=mapnik&amp;marker=-34.6037%2C-58.3816"></iframe>
+  <small class="mut">Mapa: vista de EJEMPLO (Obelisco, Buenos Aires) — reemplazar por las coordenadas reales. © <a href="https://www.openstreetmap.org/copyright">colaboradores de OpenStreetMap</a>.</small>
+  <p><b>Horario de retiro:</b> TODO — horario (ejemplo, reemplazar).</p>
+  <p><b>Condiciones de venta:</b> TODO — condiciones (ejemplo, reemplazar).</p>`;
+}
+function settings(){
+  return `<h2>Ajustes</h2><div class="demo">Número DEMO actual: <b>${esc(digits())}</b>${digitsOk(digits())?'':' (de prueba — reemplazalo por el real)'}</div>
+  <label>Número de WhatsApp del negocio (solo dígitos + código país)<input id="s-d" value="${digits()===FAKE_DIGITS?'':esc(digits())}" placeholder="Ej: 54911… (tu número real)"></label>
+  <div class="row"><button id="s-save">Guardar</button><button class="ghost" id="s-fake">Volver al número de prueba</button></div>
+  <p><small class="mut">Se guarda solo en este navegador (localStorage). Nunca sale de acá: no hay servidor.</small></p>`;
+}
+/* ---------- router + events ---------- */
+function render(){
+  const app=document.getElementById('app'), h=location.hash||'#/';
+  photo=0;
+  if(h.startsWith('#/lote/'))app.innerHTML=lotView(h.slice(7));
+  else if(h==='#/admin')app.innerHTML=admin();
+  else if(h==='#/deposito')app.innerHTML=depot();
+  else if(h==='#/ajustes')app.innerHTML=settings();
+  else app.innerHTML=feed();
+  bind();
+}
+function bind(){
+  document.querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>{F[b.dataset.f==='cat'?'cat':'mode']=b.dataset.v;render();});
+  const q=document.getElementById('q'); if(q)q.oninput=()=>{F.q=q.value.toLowerCase().trim();const pos=q.selectionStart;render();const nq=document.getElementById('q');nq.focus();nq.setSelectionRange(pos,pos);};
+  document.querySelectorAll('[data-p]').forEach(t=>t.onclick=()=>{photo=+t.dataset.p;render();});
+  const sh=document.getElementById('sh'); if(sh)sh.onclick=async()=>{const l=lots.find(x=>location.hash.endsWith(x.ref));const url=lotUrl(l.ref);
+    if(navigator.share){try{await navigator.share({title:l.title,text:l.title,url});}catch(e){}} else {await navigator.clipboard.writeText(url).catch(()=>{});sh.textContent='¡Enlace copiado!';}};
+  const cp=document.getElementById('cp'); if(cp)cp.onclick=async()=>{const l=lots.find(x=>location.hash.endsWith(x.ref));await navigator.clipboard.writeText(lotUrl(l.ref)).catch(()=>{});cp.textContent='¡Enlace copiado!';};
+  const ph=document.getElementById('a-ph'); if(ph)ph.onchange=()=>pickPhotos(ph.files);
+  let st='available'; document.querySelectorAll('[data-s]').forEach(b=>b.onclick=()=>{st=b.dataset.s;document.querySelectorAll('[data-s]').forEach(x=>x.classList.toggle('on',x===b));});
+  const add=document.getElementById('a-add'); if(add)add.onclick=()=>{
+    const t=document.getElementById('a-t').value.trim(), c=document.getElementById('a-c').value;
+    if(adminPhotos.length<1||t.length<3||t.length>120||!c){alert('Faltan: foto (1-4), título (3-120) o categoría.');return;}
+    lots.unshift({ref:'MOCK-'+Date.now().toString(36).toUpperCase(),title:t,photos:adminPhotos.slice(),status:st,mode:'lot',price:null,cond:'new',cat:c,ts:0});
+    adminPhotos=[];save(lots);render();};
+  document.querySelectorAll('[data-cyc]').forEach(b=>b.onclick=()=>{const l=lots.find(x=>x.ref===b.dataset.cyc);l.status=l.status==='available'?'reserved':l.status==='reserved'?'sold':'available';save(lots);render();});
+  document.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{if(confirm('Dar de baja '+b.dataset.del+'?')){lots=lots.filter(x=>x.ref!==b.dataset.del);save(lots);render();}});
+  const rs=document.getElementById('a-reset'); if(rs)rs.onclick=()=>{lots=JSON.parse(JSON.stringify(SEED));save(lots);render();};
+  const sv=document.getElementById('s-save'); if(sv)sv.onclick=()=>{const v=document.getElementById('s-d').value.replace(/\D/g,'');if(!digitsOk(v)){alert('Número inválido (7-15 dígitos, no el de prueba).');return;}localStorage.setItem(DIGITS_KEY,v);render();};
+  const fk=document.getElementById('s-fake'); if(fk)fk.onclick=()=>{localStorage.setItem(DIGITS_KEY,FAKE_DIGITS);render();};
+}
+window.addEventListener('hashchange',render); render();
+</script>
+</body>
+</html>
